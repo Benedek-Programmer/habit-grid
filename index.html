@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>HabitGrid</title>
+</head>
+<body>
+    <header class="app-header">
+        <div>
+            <h1>HabitGrid</h1>
+            <p class="subtitle">Click any square to log progress and build your streak.</p>
+        </div>
+        <div class="legend" aria-label="Activity intensity legend">
+            <span>Less</span>
+            <span class="cell" data-level="0"></span>
+            <span class="cell" data-level="1"></span>
+            <span class="cell" data-level="2"></span>
+            <span class="cell" data-level="3"></span>
+            <span class="cell" data-level="4"></span>
+            <span>More</span>
+        </div>
+    </header>
+
+    <main>
+        <form id="habit-form" class="habit-form">
+            <input id="habit-input" type="text" placeholder="New habit (e.g., Read 20 pages, Go to Training, etc.)" maxlength="60" required>
+            <button type="submit" class="btn-primary">Add Habit</button>
+        </form>
+
+        <section id="habits-container" class="habits-container"></section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
