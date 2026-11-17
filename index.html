@@ -12,20 +12,43 @@
             <h1>HabitGrid</h1>
             <p class="subtitle">Click any square to log progress and build your streak.</p>
         </div>
-        <div class="legend" aria-label="Activity intensity legend">
-            <span>Less</span>
-            <span class="cell" data-level="0"></span>
-            <span class="cell" data-level="1"></span>
-            <span class="cell" data-level="2"></span>
-            <span class="cell" data-level="3"></span>
-            <span class="cell" data-level="4"></span>
-            <span>More</span>
+        <div class="header-right">
+            <div class="legend" aria-label="Activity intensity legend">
+                <span>Less</span>
+                <span class="cell" data-level="0"></span>
+                <span class="cell" data-level="1"></span>
+                <span class="cell" data-level="2"></span>
+                <span class="cell" data-level="3"></span>
+                <span class="cell" data-level="4"></span>
+                <span>More</span>
+            </div>
+
+            <div class="backup-controls">
+                <button type="button" id="export-btn" class="btn-small">Export</button>
+                <button type="button" id="import-btn" class="btn-small">Import</button>
+                <input type="file" id="improt-file" accept=".json" hidden>
+            </div>
         </div>
     </header>
 
     <main>
         <form id="habit-form" class="habit-form">
-            <input id="habit-input" type="text" placeholder="New habit (e.g., Read 20 pages, Go to Training, etc.)" maxlength="60" required>
+            <input 
+                id="habit-input" 
+                type="text" 
+                placeholder="New habit (e.g., Read 20 pages, Go to Training, etc.)" 
+                maxlength="60" 
+                required
+            >
+
+            <div class="theme-picker" id="theme-picker" role="radiogroup" aria-label="Habit Color Theme">
+                <button type="button" class="swatch active" data-theme="green" title="Emerald Green" aria-label="Emerald Green"></button>
+                <button type="button" class="swatch" data-theme="blue" title="Ocean Blue" aria-label="Ocean Blue"></button>
+                <button type="button" class="swatch" data-theme="purple" title="Royal Purple" aria-label="Royal Purple"></button>
+                <button type="button" class="swatch" data-theme="orange" title="Sunset Orange" aria-label="Sunset Orange"></button>
+                <button type="button" class="swatch" data-theme="pink" title="Rose Pink" aria-label="Rose Pink"></button>
+            </div>
+
             <button type="submit" class="btn-primary">Add Habit</button>
         </form>
 
