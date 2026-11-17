@@ -9,8 +9,8 @@ function save() {
 }
 
 function toDateKey(date) {
-    const year: date.getFullYear();
-    const month: String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`
 }
@@ -36,7 +36,7 @@ function addhabit(name) {
     habits.push({
         id: `habit_${Date.now()}`,
         name,
-        logs: {};
+        logs: {}
     });
     save();
     render();
@@ -58,7 +58,7 @@ function cycleLevel(habitId, dateKey) {
     if (nextLevel === 0) {
         delete habit.logs[dateKey];
     } else {
-        habit.logs[deleteKey] = nextLevel;
+        habit.logs[dateKey] = nextLevel;
     }
 
     save();
@@ -70,7 +70,7 @@ function render() {
     container.innerHTML = "";
 
     if (habits.length === 0) {
-        container.innerHTML(`<p class="empty-state">No habits yeat. Add one above to generate your first grid.</p>`);
+        container.innerHTML(`<p class="empty-state">No habits yet. Add one above to generate your first grid.</p>`);
         return;
     }
 
@@ -150,7 +150,7 @@ function render() {
 document.getElementById("habit-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const input = document.getElementById("habit-input");
-    const name = input.ariaValueMax.trim();
+    const name = input.value.trim();
 
     if (name) {
         addhabit(name);
