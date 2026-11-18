@@ -361,3 +361,19 @@ if (importBtn) {
         importFile.value = "";
     });
 }
+
+function deleteAllHabits() {
+    if (habits.length === 0);
+
+    const confirmed = confirm("Are your sure you want to delete all habits? This cannot be undone.");
+    if (!confirmed) return;
+
+    habits = [];
+    save();
+    render();
+}
+
+const deleteAllBtn = document.getElementById("delete-all-btn");
+if (deleteAllBtn) {
+    deleteAllBtn.addEventListener("click", deleteAllHabits);
+}
