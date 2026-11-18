@@ -96,7 +96,7 @@ button:hover {
 .btn-primary {
     padding: 12px 20px;
     background: var(--accent);
-    color: var(--accent-text);
+    color: var(--text);
     font-size: 0.95rem;
 }
 

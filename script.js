@@ -77,7 +77,7 @@ function render() {
     container.innerHTML = "";
 
     if (habits.length === 0) {
-        container.innerHTML(`<p class="empty-state">No habits yet. Add one above to generate your first grid.</p>`);
+        container.innerHTML = `<p class="empty-state">No habits yet. Add one above to generate your first grid.</p>`;
         return;
     }
 
@@ -140,7 +140,7 @@ function render() {
         logTodayBtn.addEventListener("click", () => cycleLevel(habit.id, toDayKey));
 
         const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button;"
+        deleteBtn.type = "button";
         deleteBtn.className = "btn-delete";
         deleteBtn.textContent = "Delete";
         deleteBtn.title = "Delete habit";
@@ -198,8 +198,8 @@ document.getElementById("habit-form").addEventListener("submit", (event) => {
 render();
 
 function parseDateKey(key) {
-    const [y, m, d] = key.split("-".map(Number));
-    return new Date(y, m - 1), d;
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(y, m - 1, d);
 }
 
 function calculateStats(logs) {
@@ -217,7 +217,7 @@ function calculateStats(logs) {
         for (const key of activeKeys) {
             const currDate = parseDateKey(key);
             if (prevDate) {
-                const diffDays = Math.round((currDate - prevDate) = 86400000);
+                const diffDays = Math.round((currDate - prevDate) / 86400000);
                 running = diffDays === 1 ? running + 1 : 1;
             } else {
                 running = 1;
@@ -228,9 +228,8 @@ function calculateStats(logs) {
             }
 
             prevDate = currDate
-
-            return {currentStreak, bestStreak, totalDays};
         }
+        return {currentStreak, bestStreak, totalDays};
 }
 
 function updateHabitTheme(habitId, theme) {
@@ -290,24 +289,33 @@ function exportHabits(params) {
 }
 
 function importHabits(file) {
-    if(!file) return;
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
         try {
-            const imported = JSON.parse(event.target.result);
-            if (!Array.isArray(imported)) {
-                alert("Invalid backup file format.");
+            const parsed = JSON.parse(event.target.result);
+            const list = Array.isArray(parsed) ? parsed : parsed && parsed.habits;
+
+            if (!Array.isArray(list)) {
+                alert("Invalid backup file format.")
                 return;
             }
 
-            habits = imported
-                .filter((item) => item && typeof(item.name) === "string" && typeof(item.logs) === "object")
+            const validHabits = list 
+                .filter((item) => item && typeof(item.name) === "string" && item.name.trim() != "")
                 .map((item, idx) => ({
                     id: item.id || `imported_${Date.now()}_${idx}`,
-                    name: item.name.slice(0, 60),
-                    theme: THEMES.includes(item.theme) ? item.theme: "green",
-                    logs: item.logs || {}
+                    name: item.name.trim().slice(0,60),
+                    theme: THEMES.includes(item.theme) ? item.theme : "green",
+                    logs: item.logs && typeof(item.logs) === "object" && !Array.isArray(item.logs) ? item.logs : {}
                 }));
+            
+            if (validHabits.length === 0) {
+                alert("No habits found in this backup file.");
+                return;
+            }
+
+            habits = validHabits;
             save();
             render();
         } catch (err) {
@@ -333,8 +341,20 @@ if (exportBtn) {
 }
 
 const importBtn = document.getElementById("import-btn");
-const importFile = document.getElementById("import-file");
-if (importBtn && importFile) {
+let importFile = document.getElementById("import-file");
+
+if (importBtn) {
+    if (!importFile) {
+        importFile = document.createElement("input");
+        importFile.type = "file";
+        importFile.id = "import-file";
+        importFile.accept = ".json,application/json";
+        document.body.appendChild(importFile);
+    }
+
+    importFile.hidden = false;
+    importFile.style.cssText = "position:fixed;left:-9999px;opacity:0;";
+
     importBtn.addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", (event) => {
         importHabits(event.target.files[0]);
