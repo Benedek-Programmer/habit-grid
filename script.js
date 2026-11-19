@@ -363,7 +363,7 @@ if (importBtn) {
 }
 
 function deleteAllHabits() {
-    if (habits.length === 0);
+    if (habits.length === 0) return;
 
     const confirmed = confirm("Are your sure you want to delete all habits? This cannot be undone.");
     if (!confirmed) return;
@@ -377,3 +377,266 @@ const deleteAllBtn = document.getElementById("delete-all-btn");
 if (deleteAllBtn) {
     deleteAllBtn.addEventListener("click", deleteAllHabits);
 }
+
+const APPEARANCE_KEY = "habitgrid_appearance_v1";
+let appearance = localStorage.getItem(APPEARANCE_KEY) === "light" ? "light" : "dark";
+
+function applyAppearance() {
+    document.documentElement.dataset.appearance = appearance;
+    const modeBtn = document.getElementById("theme-mode-btn");
+    if (modeBtn) {
+        const isLight = appearance === "light";
+        modeBtn.textContent = isLight ? "🌙 Dark" : "☀️ Light";
+        modeBtn.title = isLight ? "Switch to Dark Mode" : "Switch to Light Mode";
+    }
+}
+
+function toggleAppearance() {
+    appearance = appearance === "light" ? "dark" : "light";
+    localStorage.setItem(APPEARANCE_KEY, appearance);
+    applyAppearance();
+}
+
+const PNG_PALETTES = {
+    dark: {
+        cardBg: "#1e293b",
+        border: "#334155",
+        title: "#f8fafc",
+        muted: "#94a3b8",
+        themes: {
+            green: {accent: "#22c55e", levels: ["#334155", "#166534", "#15803d", "#22c55e", "#86efac"]},
+            blue: {accent: "#3b82f6", levels: ["#334155", "#1e3a8a", "#1d3ed8", "#3b82f6", "#93c5fd"]},
+            purple: {accent: "#a855f7", levels: ["#334155", "#4c1d95", "#6d28d9", "#a855f7", "#d8b4fe"]},
+            orange: {accent: "#f97316", levels: ["#334155", "#7c2d12", "#c2410c", "#f97316", "#fdba74"]},
+            pink: {accent: "#ec4899", levels: ["#334155", "#831843", "#be185d", "#ec4899", "#f9a8d4"]}
+        }
+    },
+    light: {
+        cardBg: "#ffffff",
+        border: "#cbd5e1",
+        title: "#0f172a",
+        muted: "#475569",
+        themes: {
+            green: {accent: "#16a34a", levels: ["#e2e8f0", "#bbf7d0", "#4ade80", "#16a34a", "#14532d"]},
+            blue: {accent: "#2563eb", levels: ["#e2e8f0", "#bfdbfe", "#60a5fa", "#2563eb", "#1e3a8a"]},
+            purple: {accent: "#9333ea", levels: ["#e2e8f0", "#e9d5ff", "#c084fc", "#9333ea", "#581c87"]},
+            orange: {accent: "#ea580c", levels: ["#e2e8f0", "#fed7aa", "#fb923c", "#ea580c", "#7c2d12"]},
+            pink: {accent: "#db2777", levels: ["#e2e8f0", "#fbcfe8", "#f472b6", "#db2777", "#831843"]}
+        }
+    }
+};
+
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+}
+
+function exportHabitPng(habit) {
+    const modePalette = PNG_PALETTES[appearance === "light" ? "light" : "dark"];
+    const themeKey = THEMES.includes(habit.theme) ? habit.theme : "green";
+    const palette = modePalette.themes[themeKey];
+    const logs = habit.logs || {};
+    const {currentStreak, bestStreak, totalDays} = calculateStats(logs);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + (6 - today.getDay()));
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 363);
+
+    const scale = 2;
+    const padX = 28;
+    const padY = 26;
+    const headerHeight = 54;
+    const labelColWidth = 34;
+    const monthRowHeight = 20;
+    const cellSize = 13;
+    const gap = 4;
+    const footerHeight = 32;
+
+    const gridWidth = 52 * cellSize + 51 * gap;
+    const gridHeight = 7 * cellSize + 6 * gap;
+    const width = padX * 2 + labelColWidth + gridWidth;
+    const height = padY * 2 + headerHeight + monthRowHeight + gridHeight + 16 + footerHeight;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = modePalette.cardBg;
+    drawRoundedRect(ctx, 0, 0, width, height, 14);
+    ctx.fill();
+
+    ctx.strokeStyle = modePalette.border;
+    ctx.lineWidth = 1.5;
+    drawRoundedRect(ctx, 0.75, 0.75, width - 1.5, height - 1.5, 14);
+    ctx.stroke();
+
+    const fontStack = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+    ctx.fillStyle = modePalette.title;
+    ctx.font = `700 19px ${fontStack}`;
+    ctx.textBaseline = "top";
+    ctx.fillText(habit.name, padX, padY);
+
+    ctx.fillStyle = modePalette.muted;
+    ctx.font = `500 12px ${fontStack}`;
+    ctx.fillText(`52-Week Habit Snapshot • ${toDateKey(new Date())}`, padX, padY + 26);
+
+    const stats = [
+        {label: "Total: ", value: `${totalDays}d`},
+        {label: "Best: ", value: `${bestStreak}d`},
+        {label: "Streak: ", value: `${currentStreak}d`}
+    ];
+
+    let cursorX = width - padX;
+    ctx.font = `600 13px ${fontStack}`;
+    stats.forEach((stats) => {
+        const valWidth = ctx.measureText(stats.value). width;
+        cursorX -= valWidth;
+        ctx.fillStyle = palette.accent;
+        ctx.fillText(stats.value, cursorX, padY + 4);
+
+        const lblWidth = ctx.measureText(stats.label).width;
+        cursorX -= lblWidth;
+        ctx.fillStyle = modePalette.muted;
+        ctx.fillText(stats.label, cursorX, padY + 4);
+
+        cursorX -= 16;
+    });
+
+    const gridOriginX = padX + labelColWidth;
+    const gridOriginY = padY + headerHeight + monthRowHeight;
+
+    ctx.fillStyle = modePalette.muted;
+    ctx.font = `500 11px ${fontStack}`;
+    let lastMonth = -1;
+    for (let week = 0; week < 52; week++) {
+        const weekSunday = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + week * 7);
+        const month = weekSunday.getMonth();
+        const nextWeekSunday = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + (week + 1) * 7);
+        const skipFirstWeekCollision = week === 0 && nextWeekSunday.getMonth() !== month;
+
+        if (month !== lastMonth && !skipFirstWeekCollision) {
+            ctx.fillText(MONTH_NAMES[month], gridOriginX + week * (cellSize + gap), padY + headerHeight + 2);
+            lastMonth = month;
+        }
+    }
+
+    WEEKDAY_LABELS.forEach((dayText, rowIdx) => {
+        if (!dayText) return;
+        ctx.fillText(dayText, padX, gridOriginY + rowIdx * (cellSize + gap) + 1);
+    });
+
+    for (let i = 0; i < 364; i++) {
+        const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+        const key = toDateKey(cellDate);
+        const level = logs[key] || 0;
+
+        const col = Math.floor(i / 7);
+        const row = i % 7;
+        const x = gridOriginX + col * (cellSize + gap);
+        const y = gridOriginY + row * (cellSize + gap);
+
+        ctx.globalAlpha = cellDate > today ? 0.25 : 1;
+        ctx.fillStyle = palette.levels[level] || palette.levels[0];
+        drawRoundedRect(ctx, x, y, cellSize, cellSize, 3);
+        ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+
+    const footerY = gridOriginY + gridHeight + 18;
+    ctx.fillStyle = modePalette.muted;
+    ctx.font = `700 12px ${fontStack}`;
+    ctx.fillText("HabitGrid", padX, footerY);
+
+    let legendX = width- padX;
+    const moreText = "More";
+    legendX -= ctx.measureText(moreText).width;
+    ctx.font = `500 12px ${fontStack}`;
+    ctx.fillText(moreText, legendX, footerY);
+    legendX -= 6;
+
+    for (let lvl = 4; lvl < 0; lvl--) {
+        legendX -= cellSize;
+        ctx.fillStyle = palette.levels[lvl];
+        drawRoundedRect(ctx, legendX, footerY, cellSize, cellSize, 3);
+        ctx.fill();
+        legendX -= 4;
+    }
+
+    const lessText = "Less";
+    legendX -= (ctx.measureText(lessText).width + 2);
+    ctx.fillStyle = modePalette.muted;
+    ctx.fillText(lessText, legendX, footerY);
+
+    const slug = habit.name.toLowerCase().replace(/[\W_]+/g, "-").replace(/^-+|-+$/g, "") || "habit";
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${slug}-habitgrid-${toDateKey(new Date())}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }, "image/png");
+}
+
+function injectShareButtons() {
+    const card = document.querySelectorAll("#habits-container .habit-card");
+    card.forEach((card, index) => {
+        const habit = habits[index];
+        const actions = card.querySelector(".habit-actions");
+        const deleteBtn = actions ? actions.querySelector(".btn-delete") : null;
+        if (!habit || !actions || actions.querySelector(".btn-share")) return;
+
+        const shareBtn = document.createElement("button");
+        shareBtn.type = "button";
+        shareBtn.className = "btn-share";
+        shareBtn.title = "Download a PNG snapshot of your progress";
+        shareBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Share PNG</span>
+         `;
+         shareBtn.addEventListener("click", () => exportHabitPng(habit));
+
+         if (deleteBtn) {
+            actions.insertBefore(shareBtn, deleteBtn);
+         } else {
+            actions.appendChild(shareBtn);
+         }
+    });
+}
+
+const baseRender = render;
+render = function() {
+    applyAppearance();
+    baseRender();
+    injectShareButtons();
+};
+
+const themeModeBtn = document.getElementById("theme-mode-btn");
+if (themeModeBtn) {
+    themeModeBtn.addEventListener("click", toggleAppearance);
+}
+
+applyAppearance();
+injectShareButtons();
