@@ -571,7 +571,7 @@ function exportHabitPng(habit) {
     ctx.fillText(moreText, legendX, footerY);
     legendX -= 6;
 
-    for (let lvl = 4; lvl < 0; lvl--) {
+    for (let lvl = 4; lvl >= 0; lvl--) {
         legendX -= cellSize;
         ctx.fillStyle = palette.levels[lvl];
         drawRoundedRect(ctx, legendX, footerY, cellSize, cellSize, 3);
@@ -650,11 +650,11 @@ function escapeHtml(str) {
         .replace(/&/g, "&amp;")
         .replace(/&/g, "&lt;")
         .replace(/&/g, "&gt;")
-        .replace(/&/g, "&qout;");
+        .replace(/"/g, "&quot;");
 }
 
 function switchView(viewName, habitId) {
-    const validViews = ["grid", "stats", "habit", "templates", "achievments", "about"];
+    const validViews = ["grid", "stats", "habit", "templates", "achievements", "about"];
     const target = validViews.includes(viewName) ? viewName : "grid";
     currentView = target;
 
@@ -666,7 +666,7 @@ function switchView(viewName, habitId) {
         section.hidden = section.id !== `view-${target}`;
     });
 
-    document.querySelectorAll(".app-nev .nav-link").forEach((btn) => {
+    document.querySelectorAll(".app-nav .nav-link").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.view === target);
     });
 
@@ -677,7 +677,7 @@ function switchView(viewName, habitId) {
     }
 }
 
-document.querySelectorAll(".app-nav .app-link").forEach((btn) => {
+document.querySelectorAll(".app-nav .nav-link").forEach((btn) => {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
 });
 
@@ -709,7 +709,7 @@ function ensureNoteModal() {
         if (event.target === backdrop) closeNoteModal();
     });
 
-    document.getElementById("note-cancel-btn").addEventListener("click", closeNoteModal());
+    document.getElementById("note-cancel-btn").addEventListener("click", closeNoteModal);
 
     document.getElementById("note-clear-btn").addEventListener("click", () => {
         if (!activeNoteTarget) return;
@@ -726,7 +726,7 @@ function ensureNoteModal() {
     document.getElementById("note-save-btn").addEventListener("click", () => {
         if (!activeNoteTarget) return;
         const {habitId, dateKey} = activeNoteTarget;
-        const habit = habit.find((h) => h.id === habitId);
+        const habit = habits.find((h) => h.id === habitId);
         const text = document.getElementById("note-modal-textarea").value.trim();
         if (habit) {
             if (!habit.notes) habit.notes = {};
@@ -867,7 +867,7 @@ function reorderHabits(sourceId, targetId) {
     list.className = "archived-list";
 
     archivedHabits.forEach((habit) => {
-        const {totalDays, bestStreak} = calculateStats(habits.logs || {});
+        const {totalDays, bestStreak} = calculateStats(habit.logs || {});
         const item = document.createElement ("div");
         item.className = "archived-item";
         item.innerHTML = `
@@ -893,7 +893,7 @@ function reorderHabits(sourceId, targetId) {
         delBtn.addEventListener("click", () => deleteHabit(habit.id));
 
         btns.append(restoreBtn, deleteBtn);
-        items.appendChild(btns);
+        item.appendChild(btns);
         list.appendChild(item);
     });
 
@@ -915,7 +915,7 @@ function enhanceIndexCards() {
             return;
         }
 
-        const titleGroup = CharacterData.querySelector(".habit-title-group");
+        const titleGroup = card.querySelector(".habit-title-group");
         const titleSpan = card.querySelector(".habit-title");
         if (titleGroup && titleSpan && !titleGroup.querySelector(".drag-handle")) {
             const handle = document.createElement("span");
@@ -936,15 +936,15 @@ function enhanceIndexCards() {
 
         const actions = card.querySelector(".habit-actions");
         const shareBtn = actions ? actions.querySelector(".btn-share") : null;
-        const deleteBtn = acitons ? actions.querySelector(".btn.share") : null;
+        const deleteBtn = actions ? actions.querySelector(".btn-share") : null;
 
         if (actions && !actions.querySelector(".btn-link-subtle")) {
             const detailsBtn = document.createElement("button");
             detailsBtn.type = "button";
             detailsBtn.className = "btn-link-subtle";
-            details.textContent = "Details";
-            details.addEventListener("click", () => switchView("habit", habit.id));
-            acitons.insertBefore(detailsBtn, shareBtn || deleteBtn);
+            detailsBtn.textContent = "Details";
+            detailsBtn.addEventListener("click", () => switchView("habit", habit.id));
+            actions.insertBefore(detailsBtn, shareBtn || deleteBtn);
         }
 
         if (actions && !actions.querySelector(".btn-archive")) {
@@ -969,10 +969,10 @@ function enhanceIndexCards() {
             draggedHabitId = habit.id;
             card.classList.add("dragging");
         });
-        card.addEventListener("draggend", () => {
+        card.addEventListener("dragend", () => {
             draggedHabitId = null;
             card.classList.remove("dragging");
-            container.querySelectorAll(".habit.card").forEach((c) => c.classList.remove("drag.over"));
+            container.querySelectorAll(".habit-card").forEach((c) => c.classList.remove("drag-over"));
         });
         card.addEventListener("dragover", (event) => {
             event.preventDefault();
@@ -990,8 +990,8 @@ function enhanceIndexCards() {
         });
     });
 
-    if (habit.length > 0 && habits.every((h) = h.archived)) {
-        container.innerHTML = `<p class="empty-state">All habits are archived. Restore one below or add a new habit adobe.</p>`;
+    if (habits.length > 0 && habits.every((h) => h.archived)) {
+        container.innerHTML = `<p class="empty-state">All habits are archived. Restore one below or add a new habit above.</p>`;
     }
 
     renderTodayQuickBar();
@@ -1004,7 +1004,7 @@ function renderStatsView() {
     const page = document.getElementById("view-stats");
     if (!page) return;
 
-    const archiveHabits = habits.filter((h) => !h.archived);
+    const activeHabits = habits.filter((h) => !h.archived);
     if (habits.length === 0) {
         page.innerHTML = `<p class="empty-state">No habits tracked yet. Head to <strong>Grid</strong> or <strong>Templates</strong> to get started.</p>`;
         return;
@@ -1021,7 +1021,7 @@ function renderStatsView() {
     const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
     let totalCheckIns = 0;
     let topBestStreak = 0;
-    let topSteakHabit = "-";
+    let topStreakHabit = "-";
     let last30Completed = 0;
     const last30Possible = Math.max(1, activeHabits.length * 30);
 
@@ -1034,16 +1034,16 @@ function renderStatsView() {
         totalCheckIns += stats.totalDays;
         if (stats.bestStreak > topBestStreak) {
             topBestStreak = stats.bestStreak;
-            topSteakHabit = habit.name;
+            topStreakHabit = habit.name;
         }
 
-        Object.key(logs).forEach((key) => {
+        Object.keys(logs).forEach((key) => {
             if (logs[key] > 0) {
                 dailyCounts[key] = (dailyCounts[key] || 0) + 1;
                 const d  = parseDateKey(key);
                 weekdayCounts[d.getDay()] += 1;
                 if (!habit.archived && d >= last30Cutoff && d <= today) {
-                    last30Completed + 1;
+                    last30Completed += 1;
                 }
             }
         });
@@ -1062,8 +1062,8 @@ function renderStatsView() {
                 <div class="kpi-sub">${habits.length - activeHabits.length} archived</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Total Chack-Ins</div>
-                <div class="kpi-value">${totalChackIns}</div>
+                <div class="kpi-label">Total Check-Ins</div>
+                <div class="kpi-value">${totalCheckIns}</div>
                 <div class="kpi-sub">All-time logged squares</div>
             </div>
             <div class="kpi-card">
@@ -1092,8 +1092,8 @@ function renderStatsView() {
                     return `
                         <div class="weekday-bar-col">
                             <span class="weekday-bar-count">${count}</span>
-                            <div class="weekday-bar-fill" style="height: ${heoghtPct}%;"></div>
-                            <div class="span weekday-bar-name">${day}</div>
+                            <div class="weekday-bar-fill" style="height: ${heightPct}%;"></div>
+                            <span class="weekday-bar-name">${day}</span>
                         </div>
                     `;
                 }).join("")}
@@ -1217,7 +1217,7 @@ function renderHabitDetailView() {
     activeDetailHabitId = habit.id;
 
     const currentTheme = THEMES.includes(habit.theme) ? habit.theme : "green";
-    const logs = habits.logs || {};
+    const logs = habit.logs || {};
     const notes = habit.notes || {};
     const levels = habit.levels || {};
     const weeklyGoal = Number(habit.weeklyGoal || 7);
@@ -1248,7 +1248,7 @@ function renderHabitDetailView() {
             </div>
             <div class="backup-controls">
                 <button type="button" id="detail-log-today" class="btn-small">+ Log Today</button>
-                <button type="button" id="detail-share-png" class="btn-share"></button>
+                <button type="button" id="detail-share-png" class="btn-share">Share PNG</button>
             </div>
         </div>
 
@@ -1256,7 +1256,7 @@ function renderHabitDetailView() {
             <div class="kpi-card">
                 <div class="kpi-label">Daily Streak</div>
                 <div class="kpi-value">${currentStreak}d</div>
-                <div class="kpisub">Best: ${bestStreak}d</div>
+                <div class="kpi-sub">Best: ${bestStreak}d</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Weekly Goal (${weeklyGoal}x/wk)</div>
@@ -1288,14 +1288,14 @@ function renderHabitDetailView() {
                     </div>
                     <div class="field-group">
                         <label for="detail-theme-select">Color Theme</label>
-                        <select id="detail-theme-select">${THEMES.map((t) => `<option value="${t} ${t === currentTheme ? "selected" : ""}>${t[0].toUpperCase() + t.slice(1)}></option>`).join("")}</select>
+                        <select id="detail-theme-select">${THEMES.map((t) => `<option value="${t} ${t === currentTheme ? "selected" : ""}>${t[0].toUpperCase() + t.slice(1)}"</option>`).join("")}</select>
                     </div>
-                    <div class="filed-group">
+                    <div class="field-group">
                         <label for="detail-goal-select">Weekly Goal (Rest-Day Friendly)</label>
                         <select id="detail-goal-select">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<option value="${n}" ${n === weeklyGoal ? "selected" : ""}>${n} day${n === 1 ? "" : "s"} per week</option>`).join("")}</select>
                     </div>
                     <div class="field-group">
-                        <label for="lvl-1-input">Level 1 Meaning (Ligt)</label>
+                        <label for="lvl-1-input">Level 1 Meaning (Light)</label>
                         <input id="lvl-1-input" type="text" maxlength="40" placeholder="e.g., 15 mins" value="${escapeHtml(levels[1] || "")}">
                     </div>
                     <div class="field-group">
@@ -1312,7 +1312,7 @@ function renderHabitDetailView() {
                     </div>
                 </div>
                 <div style="margin-top: 14px;">
-                    <button type="button" class="btn-primary">Save Settings</button>
+                    <button type="submit" class="btn-primary">Save Settings</button>
                 </div>
             </form>
         </article>
@@ -1349,13 +1349,13 @@ function renderHabitDetailView() {
     grid.className = "grid";
 
     for (let i = 0; i < 364; i++) {
-        const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDay() + i);
+        const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
         const key = toDateKey(cellDate);
         const level = logs[key] || 0;
 
         const cell = document.createElement("div");
         cell.className = "cell";
-        cell.dataset = "level";
+        cell.dataset.level = level;
 
         if (cellDate > today) {
             cell.classList.add("future");
@@ -1366,7 +1366,7 @@ function renderHabitDetailView() {
         grid.appendChild(cell);
     }
 
-    layout.append(buildMonthLabels(startDate), buildWeekdayLabels(), gird);
+    layout.append(buildMonthLabels(startDate), buildWeekdayLabels(), grid);
     gridWrap.appendChild(layout);
 
     document.getElementById("detail-back-btn").addEventListener("click", () => switchView("grid"));
@@ -1382,7 +1382,7 @@ function renderHabitDetailView() {
         e.preventDefault();
         const newName = document.getElementById("detail-name-input").value.trim();
         if (newName) habit.name = newName;
-        habit.theme = document.getElementById("detail-theme-select").value();
+        habit.theme = document.getElementById("detail-theme-select").value;
         habit.weeklyGoal = Number(document.getElementById("detail-goal-select").value) || 7;
         habit.levels = {
             1: document.getElementById("lvl-1-input").value.trim(),
@@ -1419,14 +1419,14 @@ const HABIT_TEMPLATES = [
         title: "Developer Grind",
         description: "Build daily coding momentum, ship commits, and sharpen problem-solving.",
         habits: [
-            {name: "Daily Coding", theme: "green", levels: {1: "20 min", 2: "45 min", 3: "90 min", 4: "2+ hrs depp work"}},
+            {name: "Daily Coding", theme: "green", levels: {1: "20 min", 2: "45 min", 3: "90 min", 4: "2+ hrs deep work"}},
             {name: "Git Commit Streak", theme: "blue", levels: {1: "1 small fix", 2: "Feature progress", 3: "PR / Milestone", 4: "Major release"}},
             {name: "Algorithm & Docs Study", theme: "purple", levels: {1: "1 problem", 2: "2 problems", 3: "3 problems", 4: "Mock interview"}}
         ]
     },
     {
         title: "Fitness & Mobility",
-        description: "Balanced strenght, daily movement, and recovery without burnout.",
+        description: "Balanced strength, daily movement, and recovery without burnout.",
         habits: [
             {name: "Workout / Training", theme: "orange", weeklyGoal: 4, levels: {1: "20 min light", 2: "40 min session", 3: "60 min solid", 4: "PR / Intense"}},
             {name: "10,000 Steps", theme: "green", levels: {1: "5k steps", 2: "7.5k steps", 3: "10k steps", 4: "14k+ Steps"}},
@@ -1443,11 +1443,11 @@ const HABIT_TEMPLATES = [
         ]
     },
     {
-        title: "MindFulness & Sleep",
+        title: "Mindfulness & Sleep",
         description: "Protect evening wind-down routines, calm focus, and mental clarity.",
         habits: [
             {name: "Morning Meditation", theme: "blue", levels: {1: "5 min", 2: "10 min", 3: "15 min", 4: "20+ min"}},
-            {name: "No Screens Before Bed", theme: "pruple", levels: {1: "15 min", 2: "30 min", 3: "45 min", 4: "60+ min"}},
+            {name: "No Screens Before Bed", theme: "purple", levels: {1: "15 min", 2: "30 min", 3: "45 min", 4: "60+ min"}},
             {name: "Gratitude Journal", theme: "pink", levels: {1: "1 line", 2: "3 things", 3: "Full reflection", 4: "Deep review"}}
         ]
     }
@@ -1478,20 +1478,20 @@ function renderTemplateView() {
         <div id="template-toast" class="toast-banner" hidden></div>
         <section class="templates-grid">
             ${HABIT_TEMPLATES.map((pack, packIdx) => `
-                    <article class="template-grid">
+                    <article class="template-card">
                         <div>
                             <h2 class="section-heading">${pack.title}</h2>
-                            <p class="template-desc">${pack.desription}</p>
-                            <ul class="template-item">
+                            <p class="template-desc">${pack.description}</p>
+                            <ul class="template-items">
                                 ${pack.habits.map((item, itemIdx) => `
                                     <li>
                                         <span><strong>${item.name}</strong></span>
-                                        <button type="button" class="btn-small" data-packs="${dackIdx}" data-item="${itemIdx}">+ Add</button>
+                                        <button type="button" class="btn-small" data-pack="${packIdx}" data-item="${itemIdx}">+ Add</button>
                                     </li>
                                 `).join("")}
                             </ul>
                         </div>
-                        <button type="button" class="btn-primary" data-add-packs="${dackIdx}">Add Pack to My Grid</button>
+                        <button type="button" class="btn-primary" data-add-pack="${packIdx}">Add Pack to My Grid</button>
                     </article> 
                 `).join("")}
         </section>
@@ -1526,12 +1526,13 @@ function renderTemplateView() {
 // Sub view 4
 
 function renderAchievmentsView() {
-    const page = document.getElementById("view-achievments");
+    const page = document.getElementById("view-achievements");
     if (!page) return;
 
     let totalLogs = 0;
     let maxStreak = 0;
     let level4Count = 0;
+    let consecutiveLevel4 = 0;
     let totalNotes = 0;
     let hasCustomLevels = false;
     let hasArchivedVeteran = false;
@@ -1562,46 +1563,46 @@ function renderAchievmentsView() {
     });
 
     const badges = [
-        {icon: "🌱", title: "First Step", desc: "Log your first habit square.", currrent: Math.min(1, totalLogs), target: 1},
-        {icon: "🔥", title: "Week Warrior", desc: "Reach a 7-day streak on any habit.", currrent: Math.min(7, maxStreak), target: 7},
-        {icon: "🏆", title: "Unstoppable Moth", desc: "Reach a 30-day streak on any habit.", currrent: Math.min(30, maxStreak), target: 30},
-        {icon: "💯", title: "Century Club", desc: "Log 100 total active days across habits.", currrent: Math.min(100, totalLogs), target: 100},
-        {icon: "🗓️", title: "Year in Pixels", desc: "Log 365 total active days across habits.", currrent: Math.min(365, totalLogs), target: 365},
-        {icon: "⚡", title: "Max Effort", desc: "Log a Level 4 intensity square.", currrent: Math.min(1, level4Count), target: 1},
-        {icon: "💎", title: "Perfect Week", desc: "Log 7 consecutive days at Level 4.", currrent: Math.min(7, consecutiveLevel4), target: 7},
-        {icon: "🧱", title: "Habit Architect", desc: "Track 3 or more active habits at once.", currrent: Math.min(3, habits.filter((h) => !h.archived).length), target: 3},
-        {icon: "🎨", title: "Full Spectrum", desc: "Use all 5 theme colors across your habits.", currrent: Math.min(5, distinctThemes.size), target: 5},
-        {icon: "📝", title: "Storyteller", desc: "Write 5 daily square notes.", currrent: Math.min(5, totalNotes), target: 5},
-        {icon: "🎯", title: "Custom Crafted", desc: "Define custom Level 1-4 targets for a habit.", currrent: hasCustomLevels ? 1 : 0, target: 1},
-        {icon: "📦", title: "Finisher", desc: "Archive a habit with at least 14 logged days.", currrent: hasArchivedVeteran? 1 : 0, target: 1}
+        {icon: "🌱", title: "First Step", desc: "Log your first habit square.", current: Math.min(1, totalLogs), target: 1},
+        {icon: "🔥", title: "Week Warrior", desc: "Reach a 7-day streak on any habit.", current: Math.min(7, maxStreak), target: 7},
+        {icon: "🏆", title: "Unstoppable Month", desc: "Reach a 30-day streak on any habit.", current: Math.min(30, maxStreak), target: 30},
+        {icon: "💯", title: "Century Club", desc: "Log 100 total active days across habits.", current: Math.min(100, totalLogs), target: 100},
+        {icon: "🗓️", title: "Year in Pixels", desc: "Log 365 total active days across habits.", current: Math.min(365, totalLogs), target: 365},
+        {icon: "⚡", title: "Max Effort", desc: "Log a Level 4 intensity square.", current: Math.min(1, level4Count), target: 1},
+        {icon: "💎", title: "Perfect Week", desc: "Log 7 consecutive days at Level 4.", current: Math.min(7, consecutiveLevel4), target: 7},
+        {icon: "🧱", title: "Habit Architect", desc: "Track 3 or more active habits at once.", current: Math.min(3, habits.filter((h) => !h.archived).length), target: 3},
+        {icon: "🎨", title: "Full Spectrum", desc: "Use all 5 theme colors across your habits.", current: Math.min(5, distinctThemes.size), target: 5},
+        {icon: "📝", title: "Storyteller", desc: "Write 5 daily square notes.", current: Math.min(5, totalNotes), target: 5},
+        {icon: "🎯", title: "Custom Crafted", desc: "Define custom Level 1-4 targets for a habit.", current: hasCustomLevels ? 1 : 0, target: 1},
+        {icon: "📦", title: "Finisher", desc: "Archive a habit with at least 14 logged days.", current: hasArchivedVeteran? 1 : 0, target: 1}
     ];
 
     const unlockedCount = badges.filter((b) => b.current >= b.target).length;
 
     page.innerHTML = `
         <div class="kpi-card" style="margin-bottom: 20px;">
-            <div class="kpi-label">Achievments Progress</div>
+            <div class="kpi-label">Achievements Progress</div>
             <div class="kpi-value">${unlockedCount} / ${badges.length} Unlocked</div>
             <div class="progress-track" style="margin-top: 10px;">
-                <div class="prgress-fill" style="width: ${Math.round((unlockedCount / badges.length) * 100)}%;"></div>
+                <div class="progress-fill" style="width: ${Math.round((unlockedCount / badges.length) * 100)}%;"></div>
             </div>
         </div>
 
-        <section class="achievments-grid">
+        <section class="achievements-grid">
             ${badges.map((b) => {
                 const unlocked = b.current >= b.target;
                 const pct = Math.round((b.current / b.target) * 100);
                 return `
-                    <article class="badge-card" ${unlocked ? "unlocked" : ""}>
+                    <article class="badge-card ${unlocked ? "unlocked" : ""}">
                         <div class="badge-top">
                             <span class="badge-icon" aria-hidden="true">${b.icon}</span>
                             <div>
                                 <strong>${b.title}</strong>
-                                <div class="badge status">${unlocked ? "UNLOCKED" : `${b.current} / ${b.target}`}</div>
+                                <div class="badge-status">${unlocked ? "UNLOCKED" : `${b.current} / ${b.target}`}</div>
                             </div>
                         </div>
                         <p class="template-desc" style="margin-bottom: 10px;">${b.desc}</p>
-                        <div class="prgress-track">
+                        <div class="progress-track">
                             <div class="progress-fill" style="width: ${pct}%;"></div>
                         </div>
                     </article>
@@ -1615,7 +1616,7 @@ function refreshactiveView() {
     if (currentView === "stats") renderStatsView();
     if (currentView === "habit") renderHabitDetailView();
     if (currentView === "templates") renderTemplateView();
-    if (currentView === "achievments") renderAchievmentsView();
+    if (currentView === "achievements") renderAchievmentsView();
 }
 
 // Shortcuts
@@ -1646,7 +1647,7 @@ document.addEventListener("keydown", (event) => {
 
 const baseSave = save;
 save = function () {
-    baseRender();
+    baseSave();
     refreshactiveView();
 };
 
@@ -1656,4 +1657,4 @@ render = function () {
     enhanceIndexCards();
 };
 
-save();
+render();

@@ -609,7 +609,7 @@ input[type="text"]::placeholder {
     background: transparent;
     color: var(--text);
     font-size: inherit;
-    font-palette: inherit;
+    font-weight: 700;
     padding: 0;
     text-align: left;
 }
@@ -749,7 +749,7 @@ input[type="text"]::placeholder {
     border-color: transparent;
 }
 
-.note.modal-acitons {
+.note-modal-acitons {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
@@ -876,6 +876,8 @@ input[type="text"]::placeholder {
 }
 
 .detail-select {
+    background: var(--card-elevated);
+    color: var(--text);
     padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid var(--text);
@@ -965,7 +967,7 @@ input[type="text"]::placeholder {
     margin-bottom: 18px;
 }
 
-.template-item li {
+.template-items li {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -986,7 +988,7 @@ input[type="text"]::placeholder {
     margin-bottom: 18px;
 }
 
-.achievments-grid {
+.achievements-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 14px;
